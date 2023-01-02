@@ -6,8 +6,8 @@ public class Seed
 {
     public static async Task SeedData(DataContext context)
         {
-            if (context == null) throw new ArgumentNullException(nameof(context));
-            if (context.Activities.Any()) return;
+            
+            if (context.Activities!.Any()) return;
             
             var activities = new List<Activity>
             {
@@ -103,7 +103,7 @@ public class Seed
                 }
             };
 
-            await context.Activities.AddRangeAsync(activities);
+            await context.Activities!.AddRangeAsync(activities);
             await context.SaveChangesAsync();
         }
 }
