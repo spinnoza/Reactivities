@@ -6,17 +6,22 @@ import NavBar from './NavBar';
 import ActivityDashboard from '../../features/activities/dashboard/ActivityDashboard';
 import { v4 as uuid } from 'uuid';
 import agent from '../api/agent';
+import LoadingComponent from './LoadingComponent';
 
 function App() {
 
   const [activities, setActivities] = useState<Activity[]>([]);
   const [selectedActivity, setSelectedActivity] = useState<Activity | undefined>(undefined);
   const [editMode, setEditMode] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     agent.Activities.list().then(
       response => {
-        setActivities(activities => response);
+        let filterDateList = response.map<Activity>((v) => { return { ...v, ['date']: v.date.split('T')[0] } });
+        setActivities(activities => filterDateList);
+        setLoading((loading) => false);
       }
     )
   }, []);
@@ -39,21 +44,41 @@ function App() {
   }
 
   function handleCreateOrEditActivity(activity: Activity) {
-    activity.id
-      ? setActivities(activities=>[...activities.filter(x => x.id !== activity.id), activity])
-      : setActivities(activities => [...activities, {...activity,id: uuid()}]);
-    setEditMode(false);
-    setSelectedActivity(activity);
+    setSubmitting(submitting => true);
+    if (activity.id) {
+      agent.Activities.update(activity).then(() => {
+        setActivities(activities => [...activities.filter(x => x.id !== activity.id), activity]);
+        setSelectedActivity(selectedActivity => activity);
+        setEditMode(editMode => false);
+        setSubmitting(submitting => false);
+      })
+    }
+    else {
+      activity.id = uuid();
+      agent.Activities.create(activity).then(() => {
+        setActivities(activities => [...activities, activity]);
+        setSelectedActivity(selectedActivity => activity);
+        setEditMode(editMode => false);
+        setSubmitting(submitting => false);
+      })
+    }
   }
 
   function handleDeleteActivity(id: string) {
-    setActivities([...activities.filter(x => x.id !== id)])
+    setSubmitting(submitting => true);
+    agent.Activities.delete(id).then(
+      ()=>{
+        setActivities([...activities.filter(x => x.id !== id)]);
+        setSubmitting(submitting => false);
+      }
+    );
+   
   }
 
-
+  if (loading) return <LoadingComponent content='Loading app' />
   return (
     <>
-      <NavBar  openForm={handleFormOpen}/>
+      <NavBar openForm={handleFormOpen} />
       <Container style={{ marginTop: '7em' }}>
         <ActivityDashboard
           activities={activities}
@@ -65,6 +90,7 @@ function App() {
           closeForm={handleFormClose}
           createOrEdit={handleCreateOrEditActivity}
           deleteActivity={handleDeleteActivity}
+          submitting = {submitting}
         />
       </Container>
     </>
