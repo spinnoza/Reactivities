@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using Persistence;
 using Application.Core;
 using API.Extensions;
+using FluentValidation;
+using FluentValidation.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,7 +13,14 @@ var builder = WebApplication.CreateBuilder(args);
 
 
 builder.Services.AddControllers();
+builder.Services.AddValidatorsFromAssemblyContaining<Create>();
+builder.Services.AddFluentValidationAutoValidation();
+
+
+
+
 builder.Services.AddApplicationServices(builder.Configuration);
+
 
 var app = builder.Build();
 
