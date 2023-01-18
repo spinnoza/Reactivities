@@ -9,13 +9,19 @@ using FluentValidation.AspNetCore;
 using API.Middleware;
 using Microsoft.AspNetCore.Identity;
 using Domain;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
 
-builder.Services.AddControllers();
+builder.Services.AddControllers(option =>
+{
+    var policy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
+    option.Filters.Add(new AuthorizeFilter(policy));
+});
 builder.Services.AddValidatorsFromAssemblyContaining<Create>();
 builder.Services.AddFluentValidationAutoValidation();
 
@@ -43,6 +49,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("CorsPolicy");
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
@@ -55,7 +62,7 @@ try
     var context = services.GetRequiredService<DataContext>();
     var userManager = services.GetRequiredService<UserManager<AppUser>>();
     await context.Database.MigrateAsync();
-    await Seed.SeedData(context,userManager);
+    await Seed.SeedData(context, userManager);
 }
 catch (Exception ex)
 {

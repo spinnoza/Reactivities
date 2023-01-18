@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using API.DTOs;
+using API.Services;
 using Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -7,14 +8,17 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 namespace API.Controllers
 {
-   [ApiController]
+    [ApiController]
+    [AllowAnonymous]
     [Route("api/[controller]")]
     public class AccountController : ControllerBase
     {
         private readonly UserManager<AppUser> _userManager;
-       
-        public AccountController(UserManager<AppUser> userManager)
+        private readonly TokenService _tokenService;
+
+        public AccountController(UserManager<AppUser> userManager, TokenService tokenService)
         {
+            _tokenService = tokenService;
             _userManager = userManager;
         }
 
@@ -64,7 +68,7 @@ namespace API.Controllers
                 return CreateUserObject(user);
             }
 
-            return BadRequest(result.Errors);
+            return BadRequest("Probloms register");
         }
 
         [Authorize]
@@ -82,7 +86,7 @@ namespace API.Controllers
             {
                 DisplayName = user.DisplayName,
                 Image = null,
-                Token = "this is test Token",
+                Token = _tokenService.CreateToken(user),
                 Username = user.UserName
             };
         }
